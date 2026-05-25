@@ -11,6 +11,12 @@ Conventions:
 - `a`/`b` refer to instruction operands (`instr.a`, `instr.b`).
 - Instructions may also carry optional source location `loc` (used for VM error reporting).
 
+## Program entry
+
+- Runtimes begin execution at function index `0` (synthetic `(main)`).
+- This function contains bytecode for source-file top-level statements.
+- Normal opcodes apply within this function exactly as they do in user-declared functions.
+
 ## Stack / constants
 
 - `CONST a`: push constant at `functions[frame.funcIndex].consts[a]`.

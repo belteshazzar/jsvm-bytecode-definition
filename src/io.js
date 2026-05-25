@@ -14,24 +14,23 @@ import { panic } from './common.js';
 //   payload[byteLen]
 //
 // Tags:
-//   1 CONSTS
-//   2 FUNCTIONS
-//   3 CLASSES
-//   4 IMPORTS
-//   5 EXPORTS
-//   6 DEFAULT_EXPORT
-//   7 REEXPORTS
+//   1 MODULE_INTERFACE
+//   2 CONSTS
+//   3 FUNCTIONS
+//   4 CLASSES
 
 const MAGIC = Buffer.from('JSVB');
 const VERSION = 1;
 
-const TAG_CONSTS = 1;
-const TAG_FUNCTIONS = 2;
-const TAG_CLASSES = 3;
-const TAG_IMPORTS = 4;
-const TAG_EXPORTS = 5;
-const TAG_DEFAULT_EXPORT = 6;
-const TAG_REEXPORTS = 7;
+const TAG_MODULE_INTERFACE = 1;
+const TAG_CONSTS = 2;
+const TAG_FUNCTIONS = 3;
+const TAG_CLASSES = 4;
+
+// Module export entry kinds
+const E_NAMED = 0;
+const E_DEFAULT = 1;
+const E_REEXPORT = 2;
 
 // Const tags
 const C_NULL = 0;
@@ -261,8 +260,7 @@ function decodeConsts(r) {
   return consts;
 }
 
-function encodeImports(imports) {
-  const w = new Writer();
+function encodeImports(w, imports) {
   w.u32(imports.length);
   for (const imp of imports) {
     w.str(imp.source ?? '');
@@ -273,7 +271,6 @@ function encodeImports(imports) {
       w.str(spec.local ?? '');
     }
   }
-  return w.finish();
 }
 
 function decodeImports(r) {
@@ -291,75 +288,78 @@ function decodeImports(r) {
   return imports;
 }
 
-function encodeExports(exportsList) {
-  const w = new Writer();
-  w.u32(exportsList.length);
-  for (const exp of exportsList) {
-    w.str(exp.exported ?? '');
-    w.str(exp.local ?? '');
+function encodeModuleExports(w, exportsList) {
+  const list = Array.isArray(exportsList) ? exportsList : [];
+  w.u32(list.length);
+  for (const exp of list) {
+    if (exp?.kind === 'named') {
+      w.u8(E_NAMED);
+      w.str(exp.exported ?? '');
+      w.str(exp.local ?? '');
+      continue;
+    }
+    if (exp?.kind === 'default') {
+      w.u8(E_DEFAULT);
+      w.str(JSON.stringify(exp.value ?? null));
+      continue;
+    }
+    if (exp?.kind === 'reexport') {
+      w.u8(E_REEXPORT);
+      w.str(exp.source ?? '');
+      w.str(exp.imported ?? '');
+      w.str(exp.exported ?? '');
+      continue;
+    }
+    panic('Unsupported module export kind in encoder: ' + String(exp?.kind));
   }
-  return w.finish();
 }
 
-function decodeExports(r) {
+function decodeModuleExports(r) {
   const n = r.u32();
   const exportsList = [];
   for (let i = 0; i < n; i++) {
-    exportsList.push({ exported: r.str(), local: r.str() });
+    const kind = r.u8();
+    if (kind === E_NAMED) {
+      exportsList.push({ kind: 'named', exported: r.str(), local: r.str() });
+      continue;
+    }
+    if (kind === E_DEFAULT) {
+      const raw = r.str();
+      try {
+        exportsList.push({ kind: 'default', value: JSON.parse(raw) });
+      } catch {
+        panic('Malformed bundle: invalid default export payload');
+      }
+      continue;
+    }
+    if (kind === E_REEXPORT) {
+      exportsList.push({
+        kind: 'reexport',
+        source: r.str(),
+        imported: r.str(),
+        exported: r.str(),
+      });
+      continue;
+    }
+    panic('Unsupported module export kind in decoder: ' + String(kind));
   }
   return exportsList;
 }
 
-function encodeDefaultExport(defaultExport) {
+function encodeModuleInterface(moduleInterface) {
   const w = new Writer();
-  if (defaultExport == null) {
-    w.u8(0);
-  } else {
-    w.u8(1);
-    w.str(JSON.stringify(defaultExport));
-  }
+  const imports = moduleInterface?.imports ?? [];
+  const exportsList = moduleInterface?.exports ?? [];
+  encodeImports(w, imports);
+  encodeModuleExports(w, exportsList);
   return w.finish();
 }
 
-function decodeDefaultExport(r) {
-  const hasDefault = r.u8() === 1;
-  if (!hasDefault) return null;
-  const raw = r.str();
-  try {
-    return JSON.parse(raw);
-  } catch {
-    panic('Malformed bundle: invalid default export payload');
-  }
-}
-
-function encodeReExports(reExports) {
-  const w = new Writer();
-  w.u32(reExports.length);
-  for (const reExp of reExports) {
-    w.str(reExp.source ?? '');
-    const specs = Array.isArray(reExp.specifiers) ? reExp.specifiers : [];
-    w.u32(specs.length);
-    for (const spec of specs) {
-      w.str(spec.local ?? '');
-      w.str(spec.exported ?? '');
-    }
-  }
-  return w.finish();
-}
-
-function decodeReExports(r) {
-  const n = r.u32();
-  const reExports = [];
-  for (let i = 0; i < n; i++) {
-    const source = r.str();
-    const specCount = r.u32();
-    const specifiers = [];
-    for (let j = 0; j < specCount; j++) {
-      specifiers.push({ local: r.str(), exported: r.str() });
-    }
-    reExports.push({ source, specifiers });
-  }
-  return reExports;
+function decodeModuleInterface(r) {
+  return {
+    imports: decodeImports(r),
+    exports: decodeModuleExports(r),
+  };
 }
 
 function encodeFunctions(functions) {
@@ -517,21 +517,15 @@ export function encodeBundle(bundle) {
   w.u16(VERSION);
   w.u16(0);
 
+  const moduleInterface = bundle.moduleInterface ?? { imports: [], exports: [] };
   const consts = bundle.consts ?? [];
   const functions = bundle.functions ?? [];
   const classes = bundle.classes ?? [];
-  const imports = bundle.imports ?? [];
-  const exportsList = bundle.exports ?? [];
-  const defaultExport = bundle.defaultExport ?? null;
-  const reExports = bundle.reExports ?? [];
 
+  w.bytes(encodeChunk(TAG_MODULE_INTERFACE, encodeModuleInterface(moduleInterface)));
   w.bytes(encodeChunk(TAG_CONSTS, encodeConsts(consts)));
   w.bytes(encodeChunk(TAG_FUNCTIONS, encodeFunctions(functions)));
   w.bytes(encodeChunk(TAG_CLASSES, encodeClasses(classes)));
-  w.bytes(encodeChunk(TAG_IMPORTS, encodeImports(imports)));
-  w.bytes(encodeChunk(TAG_EXPORTS, encodeExports(exportsList)));
-  w.bytes(encodeChunk(TAG_DEFAULT_EXPORT, encodeDefaultExport(defaultExport)));
-  w.bytes(encodeChunk(TAG_REEXPORTS, encodeReExports(reExports)));
 
   return w.finish();
 }
@@ -544,31 +538,26 @@ export function decodeBundle(buf) {
   r.u16(); // flags
   if (version !== VERSION) panic(`Unsupported bundle format version ${version} (expected ${VERSION})`);
 
+  let moduleInterface = null;
   let consts = null;
   let functions = null;
   let classes = null;
-  let imports = [];
-  let exportsList = [];
-  let defaultExport = null;
-  let reExports = [];
 
   while (r.off < r.buf.length) {
     const tag = r.u32();
     const len = r.u32();
     const payload = r.bytes(len);
     const rr = new Reader(payload);
-    if (tag === TAG_CONSTS) consts = decodeConsts(rr);
+    if (tag === TAG_MODULE_INTERFACE) moduleInterface = decodeModuleInterface(rr);
+    else if (tag === TAG_CONSTS) consts = decodeConsts(rr);
     else if (tag === TAG_FUNCTIONS) functions = decodeFunctions(rr);
     else if (tag === TAG_CLASSES) classes = decodeClasses(rr);
-    else if (tag === TAG_IMPORTS) imports = decodeImports(rr);
-    else if (tag === TAG_EXPORTS) exportsList = decodeExports(rr);
-    else if (tag === TAG_DEFAULT_EXPORT) defaultExport = decodeDefaultExport(rr);
-    else if (tag === TAG_REEXPORTS) reExports = decodeReExports(rr);
     else {
       // Unknown chunk tag: skip for forward compatibility.
     }
   }
 
+  if (!moduleInterface) panic('Malformed bundle: missing MODULE_INTERFACE chunk');
   if (!consts) panic('Malformed bundle: missing CONSTS chunk');
   if (!functions) panic('Malformed bundle: missing FUNCTIONS chunk');
   if (!classes) panic('Malformed bundle: missing CLASSES chunk');
@@ -578,9 +567,6 @@ export function decodeBundle(buf) {
     consts,
     functions,
     classes,
-    imports,
-    exports: exportsList,
-    defaultExport,
-    reExports,
+    moduleInterface,
   };
 }
