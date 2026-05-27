@@ -55,6 +55,7 @@ export const GET_PROP = 'GET_PROP';
 export const SET_PROP = 'SET_PROP';
 export const MAKE_ARR = 'MAKE_ARR';
 export const APPEND_ELEM = 'APPEND_ELEM';
+export const APPEND_ELEMS = 'APPEND_ELEMS';
 export const GET_ELEM = 'GET_ELEM';
 export const SET_ELEM = 'SET_ELEM';
 export const DELETE_ELEM = 'DELETE_ELEM';
@@ -67,15 +68,21 @@ export const MAKE_FUNCTION = 'MAKE_FUNCTION';
 export const BIND_FUNC_NAME = 'BIND_FUNC_NAME';
 export const CAPTURE_THIS = 'CAPTURE_THIS';
 export const CALL = 'CALL';
+export const CALL_WITH_ARRAY = 'CALL_WITH_ARRAY';
 export const CALL_PROP = 'CALL_PROP';
+export const CALL_PROP_WITH_ARRAY = 'CALL_PROP_WITH_ARRAY';
 export const CALL_ELEM = 'CALL_ELEM';
+export const CALL_ELEM_WITH_ARRAY = 'CALL_ELEM_WITH_ARRAY';
 export const THROW = 'THROW';
 export const RET = 'RET';
 
 export const MAKE_CLASS = 'MAKE_CLASS';
 export const NEW = 'NEW';
+export const NEW_WITH_ARRAY = 'NEW_WITH_ARRAY';
 export const CALL_SUPER_CTOR = 'CALL_SUPER_CTOR';
+export const CALL_SUPER_CTOR_WITH_ARRAY = 'CALL_SUPER_CTOR_WITH_ARRAY';
 export const CALL_SUPER_METHOD = 'CALL_SUPER_METHOD';
+export const CALL_SUPER_METHOD_WITH_ARRAY = 'CALL_SUPER_METHOD_WITH_ARRAY';
 
 export const LOAD_THIS = 'LOAD_THIS';
 
@@ -130,6 +137,7 @@ export const OPCODES = Object.freeze({
   SET_PROP,
   MAKE_ARR,
   APPEND_ELEM,
+  APPEND_ELEMS,
   GET_ELEM,
   SET_ELEM,
   DELETE_ELEM,
@@ -140,14 +148,20 @@ export const OPCODES = Object.freeze({
   BIND_FUNC_NAME,
   CAPTURE_THIS,
   CALL,
+  CALL_WITH_ARRAY,
   CALL_PROP,
+  CALL_PROP_WITH_ARRAY,
   CALL_ELEM,
+  CALL_ELEM_WITH_ARRAY,
   THROW,
   RET,
   MAKE_CLASS,
   NEW,
+  NEW_WITH_ARRAY,
   CALL_SUPER_CTOR,
+  CALL_SUPER_CTOR_WITH_ARRAY,
   CALL_SUPER_METHOD,
+  CALL_SUPER_METHOD_WITH_ARRAY,
   LOAD_THIS,
 });
 
