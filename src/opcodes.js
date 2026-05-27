@@ -13,6 +13,8 @@ export const IMPORT = 'IMPORT';
 export const JMP = 'JMP';
 export const JMP_IF_FALSE = 'JMP_IF_FALSE';
 export const JMP_IF_TRUE = 'JMP_IF_TRUE';
+export const TRY_BEGIN = 'TRY_BEGIN';
+export const TRY_END = 'TRY_END';
 
 export const ITER_INIT_IN = 'ITER_INIT_IN';
 export const ITER_INIT_OF = 'ITER_INIT_OF';
@@ -26,9 +28,17 @@ export const AWAIT = 'AWAIT';
 
 export const ADD = 'ADD';
 export const SUB = 'SUB';
+export const INC = 'INC';
+export const DEC = 'DEC';
 export const MUL = 'MUL';
 export const DIV = 'DIV';
 export const MOD = 'MOD';
+export const BIT_AND = 'BIT_AND';
+export const BIT_OR = 'BIT_OR';
+export const BIT_XOR = 'BIT_XOR';
+export const SHL = 'SHL';
+export const SHR = 'SHR';
+export const USHR = 'USHR';
 
 export const LT = 'LT';
 export const LE = 'LE';
@@ -47,6 +57,7 @@ export const MAKE_ARR = 'MAKE_ARR';
 export const APPEND_ELEM = 'APPEND_ELEM';
 export const GET_ELEM = 'GET_ELEM';
 export const SET_ELEM = 'SET_ELEM';
+export const DELETE_ELEM = 'DELETE_ELEM';
 
 export const OPT_CHAIN_PROP = 'OPT_CHAIN_PROP';
 export const OPT_CHAIN_ELEM = 'OPT_CHAIN_ELEM';
@@ -58,6 +69,7 @@ export const CAPTURE_THIS = 'CAPTURE_THIS';
 export const CALL = 'CALL';
 export const CALL_PROP = 'CALL_PROP';
 export const CALL_ELEM = 'CALL_ELEM';
+export const THROW = 'THROW';
 export const RET = 'RET';
 
 export const MAKE_CLASS = 'MAKE_CLASS';
@@ -81,6 +93,8 @@ export const OPCODES = Object.freeze({
   JMP,
   JMP_IF_FALSE,
   JMP_IF_TRUE,
+  TRY_BEGIN,
+  TRY_END,
   ITER_INIT_IN,
   ITER_INIT_OF,
   ITER_HAS_NEXT,
@@ -91,9 +105,17 @@ export const OPCODES = Object.freeze({
   AWAIT,
   ADD,
   SUB,
+  INC,
+  DEC,
   MUL,
   DIV,
   MOD,
+  BIT_AND,
+  BIT_OR,
+  BIT_XOR,
+  SHL,
+  SHR,
+  USHR,
   LT,
   LE,
   GT,
@@ -110,6 +132,7 @@ export const OPCODES = Object.freeze({
   APPEND_ELEM,
   GET_ELEM,
   SET_ELEM,
+  DELETE_ELEM,
   OPT_CHAIN_PROP,
   OPT_CHAIN_ELEM,
   OPT_CHAIN_CALL,
@@ -119,6 +142,7 @@ export const OPCODES = Object.freeze({
   CALL,
   CALL_PROP,
   CALL_ELEM,
+  THROW,
   RET,
   MAKE_CLASS,
   NEW,
